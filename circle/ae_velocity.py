@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import datetime
 import math
 import keras.backend as K
+import mkdirs
 from keras.layers import Input, Dense, LSTM, Dropout
 from keras import regularizers
 from keras.models import Model, Sequential, load_model
@@ -19,10 +20,12 @@ def variable_value():
 
 	path =  "/home/ray/Documents/data/Rui_2002"
 	vertify_rate = 0.4
-	my_epochs = 25
-	encoding_dim = 3
+	my_epochs = 300
+	encoding_dim = 64
+	originalFile = "/home/ray/Documents/data/Rui_2002_vertify"# original file
+	destinationFile = "/home/ray/Documents/data/Rui_2002_test" # destination file
 
-	return path, vertify_rate, my_epochs, encoding_dim
+	return path, vertify_rate, my_epochs, encoding_dim, originalFile, destinationFile
 
 def get_vtu_num(path):
 # count the number of vtu files
@@ -108,12 +111,12 @@ def ae_velocity(vel, my_epochs, encoding_dim):# dim = 3
 	autoencoder = Model(input_img, decoded)
 	encoder = Model(input_img, encoded)
 	encoded_input = Input(shape=(encoding_dim, ))
+
 	decoder_layer1 = autoencoder.layers[-1]
 	decoder_layer2 = autoencoder.layers[-2]
 	decoder_layer3 = autoencoder.layers[-3]
 	decoder_layer4 = autoencoder.layers[-4]
 	decoder_layer5 = autoencoder.layers[-5]
-
 
 	# create the decoder model
 	decoder = Model(encoded_input, decoder_layer1(decoder_layer2(decoder_layer3(decoder_layer4(decoder_layer5(encoded_input))))))
@@ -124,16 +127,18 @@ def ae_velocity(vel, my_epochs, encoding_dim):# dim = 3
 	# train the model
 	x_train = vel
 
-	def scheduler(epoch):
-		lr_epochs=10
-		lr = K.get_value(autoencoder.optimizer.lr)
-		K.set_value(autoencoder.optimizer.lr, lr * (0.1 ** (epoch // lr_epochs)))
+	# def scheduler(epoch):
+	# 	lr_epochs=10
+	# 	lr = K.get_value(autoencoder.optimizer.lr)
+	# 	K.set_value(autoencoder.optimizer.lr, lr * (0.1 ** (epoch // lr_epochs)))
 
-		return K.get_value(autoencoder.optimizer.lr)
+	# 	return K.get_value(autoencoder.optimizer.lr)
 
-	reduce_lr = LearningRateScheduler(scheduler)
+	# reduce_lr = LearningRateScheduler(scheduler)
 
-	history = autoencoder.fit(x_train, x_train, epochs=my_epochs, batch_size=4,  callbacks=[reduce_lr], validation_split=0.2)
+	# history = autoencoder.fit(x_train, x_train, epochs=my_epochs, batch_size=128,  callbacks=[reduce_lr], validation_split=0.2)
+	history = autoencoder.fit(x_train, x_train, epochs=my_epochs, batch_size=64, validation_split=0.2)
+
 	draw_acc_loss(history)
 
 	encoder.save('vel_encoder.h5') 
@@ -145,23 +150,54 @@ def ae_velocity(vel, my_epochs, encoding_dim):# dim = 3
 def train_velocity_model(velocity):
 	my_epochs, encoding_dim = variable_value()[2],variable_value()[3]
 
-	# if not os.path.exists('vel_encoder.h5'):
-	ae_velocity(scalered_velocity, my_epochs, encoding_dim)
+	if not os.path.exists('vel_encoder.h5'):
+		ae_velocity(velocity, my_epochs, encoding_dim)
 
 
 if __name__=="__main__":  
 
-	path, vertify_rate, my_epochs, encoding_dim = variable_value()
+	path, vertify_rate, my_epochs, encoding_dim, originalFile, destinationFile = variable_value()
 
+	#load data
 	print("Data loading...")
 	velocity = get_data(path)
 	dataset, vertify = train_and_vertify(velocity,vertify_rate) 
 	print("training_dataset shape:",dataset.shape, "   vertify_dataset shape:", vertify.shape)
+
+	#process data
 	scaler = MinMaxScaler()
 	scalered_velocity = scaler.fit_transform(dataset)
 
+	#train model
 	print("Model Building and training... ")
+	# train_velocity_model(scalered_velocity)
 	train_velocity_model(scalered_velocity)
+
+	# test
+	print("Data testing...")
+	scaler_ver = MinMaxScaler()
+	scaler_vertify = scaler_ver.fit_transform(vertify)
+
+	# encoder = load_model('vel_encoder.h5', compile=False)
+	# code = encoder.predict(scaler_vertify)
+	
+	# decoder = load_model('vel_decoder.h5', compile=False)
+	# out_vertify = decoder.predict(code)
+	# scaler_ver_output = scaler_ver.inverse_transform(out_vertify)	
+
+	autoencoder = load_model('vel_ae.h5', compile=False)
+	outpus  = autoencoder.predict(scaler_vertify)
+
+	scaler_outpus = scaler_ver.inverse_transform(outpus)
+
+	value = mean_squared_error(vertify, scaler_outpus)
+	print(value)
+	# mkdirs.transform(out_vertify, originalFile, destinationFile)
+
+
+
+
+
 
 
 
