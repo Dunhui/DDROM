@@ -74,6 +74,7 @@ def train_and_vertify(dataset,vertify_rate):
 
 def draw_acc_loss(history):
 
+	plt.figure(1)
 	plt.plot(history.history['accuracy'])
 	plt.plot(history.history['val_accuracy'])
 	plt.title('Model accuracy')
@@ -82,6 +83,7 @@ def draw_acc_loss(history):
 	plt.legend(['Train', 'Test'], loc='upper left')
 	plt.show()
 
+	plt.figure(2)
 	plt.plot(history.history['loss'])
 	plt.plot(history.history['val_loss'])
 	plt.title('Model loss')
