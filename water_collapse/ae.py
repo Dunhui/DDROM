@@ -21,7 +21,7 @@ def variable_value():
 
 	path =  "/home/ray/Downloads/fluidity-master/examples/water_collapse"
 	vertify_rate = 0.4
-	my_epochs = 100
+	my_epochs = 200
 	encoding_dim = 8
 	originalFile = "/home/ray/Downloads/fluidity-master/examples/water_collapse"# original file
 	destinationFile = "/home/ray/Documents/data/water_collapse_test" # destination file
@@ -66,16 +66,16 @@ def ae_vol(vol, my_epochs, encoding_dim):# dim = 3
 	x_train = vol
 
 	# def scheduler(epoch):
-	# 	lr_epochs=10
+	# 	lr_epochs=5
 	# 	lr = K.get_value(autoencoder.optimizer.lr)
-	# 	K.set_value(autoencoder.optimizer.lr, lr * (0.1 ** (epoch // lr_epochs)))
+	# 	K.set_value(autoencoder.optimizer.lr, lr * (0.01 ** (epoch // lr_epochs)))
 
 	# 	return K.get_value(autoencoder.optimizer.lr)
 
 	# reduce_lr = LearningRateScheduler(scheduler)
 
 	# history = autoencoder.fit(x_train, x_train, epochs=my_epochs, batch_size=128,  callbacks=[reduce_lr], validation_split=0.2)
-	history = autoencoder.fit(x_train, x_train, epochs=my_epochs, batch_size=32, validation_split=0.2)
+	history = autoencoder.fit(x_train, x_train, epochs=my_epochs, batch_size=16, validation_split=0.1)
 
 	Pcd.draw_acc_loss(history)
 
