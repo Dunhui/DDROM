@@ -16,11 +16,11 @@ class AE(object):
 	def __init__(self):
 		super(AE, self).__init__()
 	
-	def build_AE_model(self, encoding_dim):
+	def build_AE_model(self, input_dim, encoding_dim):
 
-		input_img = Input(shape=(25136, ))
-		encoded = Dense(encoding_dim , activation='relu')(input_img)
-		decoded = Dense(25136, activation='tanh')(encoded)
+		input_img = Input(shape=(input_dim, ))
+		encoded = Dense(encoding_dim, activation='relu')(input_img)
+		decoded = Dense(input_dim, activation='sigmoid')(encoded)
 
 		self.autoencoder = Model(input_img, decoded)
 		self.encoder = Model(input_img, encoded)
@@ -40,9 +40,9 @@ class AE(object):
 		self.history_record = self.autoencoder.fit(x_train, x_train, epochs = epochs, batch_size = batch_size, validation_split=0.2, callbacks = [checkpoint])
 		
 		draw_Acc_Loss(self.history_record)		
-		save_model(self.encoder, 'AE_vel_encoder.h5', save_dir)
-		save_model(self.decoder, 'AE_vel_decoder.h5', save_dir)
-		save_model(self.autoencoder, 'AE_vel.h5', save_dir)
+		# save_model(self.encoder, 'AE_vel_encoder.h5', save_dir)
+		# save_model(self.decoder, 'AE_vel_decoder.h5', save_dir)
+		# save_model(self.autoencoder, 'AE_vel.h5', save_dir)
 
 		print(" AE model for Velocity trained successfully")  
 
@@ -212,105 +212,84 @@ class CAE(object):
 		print('Test loss:', scores[0], '\nTest accuracy:', scores[1])
 	
 
-def ROM(path, originalFile):
+def ROM(path):
 
 	# Load data for AE & DeepAE
 	print("Data loading...")
 	data = LoadmyData()
-	vol= data.get_velocity_data(path)
-	scaler = MinMaxScaler()
-	Velocity_scalered = scaler.fit_transform(vol)
-	train, test = data.train_and_test(vol, test_rate = 0.2)
+	Velocity_scaled, scaler_u, scaler_v= data.get_velocity_data(path)
+	train, test = data.train_and_test(Velocity_scaled, test_rate = 0.2)
 
 	# build & train model
 	# AE
 	ae = AE()
-	ae.build_AE_model(encoding_dim = 9)
-	ae.train_AE_model(train, test, epochs = 200, batch_size = 48)
-	# test
-	ae_model = '/home/ray/Documents/github_code/circle/models/saved_models/AE_vel.h5'
-	ae = load_model(ae_model, compile=False)
-	ae_outputs = ae.predict(Velocity_scalered)
-	print('Shallow AE train successfully.\nThe shape of \'AE outputs\' is ',ae_outputs.shape, '\nStart to update data in vtu files...')
-	destinationFile = '/home/ray/Documents/github_code/circle/data/AE_outputs'
-	transform_vector(ae_outputs, ae_outputs.shape[0], originalFile, destinationFile)
+	ae.build_AE_model(input_dim = train.shape[1], encoding_dim = 10)
+	ae.train_AE_model(train, test, epochs = 200, batch_size = 128)
+	# # test
+	# ae_model = '/home/ray/Documents/github_code/circle/models/saved_models/AE_vel.h5'
+	# ae = load_model(ae_model, compile=False)
+	# ae_outputs = ae.predict(Velocity_scalered)
+	# print('Shallow AE train successfully.\nThe shape of \'AE outputs\' is ',ae_outputs.shape, '\nStart to update data in vtu files...')
+	# destinationFile = '/home/ray/Documents/github_code/circle/data/AE_outputs'
+	# transform_vector(ae_outputs, ae_outputs.shape[0], path, destinationFile)
 
-	# DeepAE
-	deepAE = DeepAE()
-	deepAE.build_DeepAE_model(encoding_dim = 9)
-	deepAE.train_DeepAE_model(train, test, epochs = 20, batch_size = 12)
-	# test
-	DeepAE_model = '/home/ray/Documents/github_code/circle/models/saved_models/DeepAE_vel.h5'
-	deepAE = load_model(DeepAE_model, compile=False)
-	deepae_outputs = deepAE.predict(Velocity_scalered)
-	print('Deep AE train successfully.\nThe shape of \'DeepAE outputs\' is ',deepae_outputs.shape)
-	destinationFile = '/home/ray/Documents/github_code/circle/data/DeepAE_outputs'
-	transform_vector(deepae_outputs, deepae_outputs.shape[0], originalFile, destinationFile)
+	# # DeepAE
+	# deepAE = DeepAE()
+	# deepAE.build_DeepAE_model(encoding_dim = 9)
+	# deepAE.train_DeepAE_model(train, test, epochs = 20, batch_size = 12)
+	# # test
+	# DeepAE_model = '/home/ray/Documents/github_code/circle/models/saved_models/DeepAE_vel.h5'
+	# deepAE = load_model(DeepAE_model, compile=False)
+	# deepae_outputs = deepAE.predict(Velocity_scalered)
+	# print('Deep AE train successfully.\nThe shape of \'DeepAE outputs\' is ',deepae_outputs.shape)
+	# destinationFile = '/home/ray/Documents/github_code/circle/data/DeepAE_outputs'
+	# transform_vector(deepae_outputs, deepae_outputs.shape[0], path, destinationFile)
 
-	# CAE
-	cae = CAE()
-	cae_vol, cae_train, cae_test, scaler_u, scaler_v, scaler_w = cae.process_data_for_CAE(path)
-	cae.build_CAE_model(encoding_dim = 9)
-	cae.train_CAE_model(cae_train, cae_test, epochs = 15, batch_size = 24)
-	# test
-	cae_model = '/home/ray/Documents/github_code/circle/models/saved_models/CAE_vel.h5'
-	cae = load_model(cae_model, compile=False)
-	cae_outputs = cae.predict(cae_vol)
-	print('Conv AE train successfully.\nThe shape of \'CAE scaler_outputs\' is ',cae_outputs.shape)
-	outputs = cae_outputs.reshape(cae_outputs.shape[0], cae_outputs.shape[1], cae_outputs.shape[2])
-	outputs_u = scaler_u.inverse_transform(outputs[:,:,0])
-	outputs_v = scaler_v.inverse_transform(outputs[:,:,1])
-	outputs_w = scaler_w.inverse_transform(outputs[:,:,2])
-	Velocity_DIM = np.dstack((outputs_u, outputs_v, outputs_w))
-	print('The shape of \'Velocity\' is ',Velocity_DIM.shape)
-	destinationFile = '/home/ray/Documents/github_code/circle/data/CAE_outputs'
-	transform_vector(Velocity_DIM, Velocity_DIM.shape[0], originalFile, destinationFile)
-
-	# # encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/vel_encoder.h5'
-	# # encoder = load_model(encoder_model, compile=False)
-	# # code = encoder.predict(train)
-	# # print('The shape of \'Code\' is ',code.shape)
-
-	# code = np.load("/home/ray/Documents/github_code/circle/code/transformer/pre_code.npy")
-	# decoder_model = '/home/ray/Documents/github_code/circle/code/saved_models/DeepAE_vel_decoder.h5'
-	# decoder = load_model(decoder_model, compile = False)
-	# outputs = decoder.predict(code)
-	# print('The shape of \'scaler_outputs\' is ',outputs.shape)
-
-	# outputs = outputs.reshape(outputs.shape[0], outputs.shape[1], outputs.shape[2])
+	# # CAE
+	# cae = CAE()
+	# cae_vol, cae_train, cae_test, scaler_u, scaler_v, scaler_w = cae.process_data_for_CAE(path)
+	# cae.build_CAE_model(encoding_dim = 9)
+	# cae.train_CAE_model(cae_train, cae_test, epochs = 15, batch_size = 24)
+	# # test
+	# cae_model = '/home/ray/Documents/github_code/circle/models/saved_models/CAE_vel.h5'
+	# cae = load_model(cae_model, compile=False)
+	# cae_outputs = cae.predict(cae_vol)
+	# print('Conv AE train successfully.\nThe shape of \'CAE scaler_outputs\' is ',cae_outputs.shape)
+	# outputs = cae_outputs.reshape(cae_outputs.shape[0], cae_outputs.shape[1], cae_outputs.shape[2])
 	# outputs_u = scaler_u.inverse_transform(outputs[:,:,0])
 	# outputs_v = scaler_v.inverse_transform(outputs[:,:,1])
 	# outputs_w = scaler_w.inverse_transform(outputs[:,:,2])
-
 	# Velocity_DIM = np.dstack((outputs_u, outputs_v, outputs_w))
-	# print('The shape of \'Velocity\' is ',outputs.shape)
+	# print('The shape of \'Velocity\' is ',Velocity_DIM.shape)
+	# destinationFile = '/home/ray/Documents/github_code/circle/data/CAE_outputs'
+	# transform_vector(Velocity_DIM, Velocity_DIM.shape[0], path, destinationFile)
 
-	
-	destinationFile = '/home/ray/Documents/github_code/circle/data/fct_output'
-	transform_vector(outputs, outputs.shape[0], originalFile, destinationFile)
+	# predict code for forecasting
 
-	AE_encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/AE_vel_encoder.h5'
-	AE_encoder = load_model(AE_encoder_model, compile=False)
-	AEcode = AE_encoder.predict(Velocity_scalered)
-	print('The shape of \'AE_Code for Predict\' is ',AEcode.shape)
-	np.save('/home/ray/Documents/github_code/circle/data/AE_Code_for_Predict.npy',AEcode)
+	# destinationFile = '/home/ray/Documents/github_code/circle/data/fct_output'
+	# transform_vector(outputs, outputs.shape[0], path, destinationFile)
 
-	DeepAE_encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/DeepAE_vel_encoder.h5'
-	DeepAE_encoder = load_model(DeepAE_encoder_model, compile=False)
-	DeepAEcode = DeepAE_encoder.predict(Velocity_scalered)
-	print('The shape of \'DeepAE_Code for Predict\' is ',DeepAEcode.shape)
-	np.save('/home/ray/Documents/github_code/circle/data/Deep_Code_for_Predict.npy',DeepAEcode)
+	# AE_encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/AE_vel_encoder.h5'
+	# AE_encoder = load_model(AE_encoder_model, compile=False)
+	# AEcode = AE_encoder.predict(Velocity_scalered)
+	# print('The shape of \'AE_Code for Predict\' is ',AEcode.shape)
+	# np.save('/home/ray/Documents/github_code/circle/data/AE_Code_for_Predict.npy',AEcode)
 
-	CAE_encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/CAE_vel_encoder.h5'
-	CAE_encoder = load_model(CAE_encoder_model, compile=False)
-	CAEcode = CAE_encoder.predict(cae_vol)
-	print('The shape of \'AE_Code for Predict\' is ',CAEcode.shape)
-	np.save('/home/ray/Documents/github_code/circle/data/CAE_Code_for_Predict.npy',CAEcode)
+	# DeepAE_encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/DeepAE_vel_encoder.h5'
+	# DeepAE_encoder = load_model(DeepAE_encoder_model, compile=False)
+	# DeepAEcode = DeepAE_encoder.predict(Velocity_scalered)
+	# print('The shape of \'DeepAE_Code for Predict\' is ',DeepAEcode.shape)
+	# np.save('/home/ray/Documents/github_code/circle/data/Deep_Code_for_Predict.npy',DeepAEcode)
 
-# if __name__=="__main__":  
+	# CAE_encoder_model = '/home/ray/Documents/github_code/circle/models/saved_models/CAE_vel_encoder.h5'
+	# CAE_encoder = load_model(CAE_encoder_model, compile=False)
+	# CAEcode = CAE_encoder.predict(cae_vol)
+	# print('The shape of \'AE_Code for Predict\' is ',CAEcode.shape)
+	# np.save('/home/ray/Documents/github_code/circle/data/CAE_Code_for_Predict.npy',CAEcode)
 
-# 	# ROM train
-# 	path = '/home/ray/Documents/github_code/circle/data/fct'
-# 	originalFile = '/home/ray/Documents/github_code/circle/data/fct'
-	
-# 	ROM(path, originalFile)
+if __name__=="__main__":  
+
+	# ROM train
+	path = '../data/Rui_2002/'	
+
+	ROM(path)
