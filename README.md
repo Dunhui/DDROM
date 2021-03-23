@@ -1,6 +1,6 @@
 # ROM-for-cfd  
 
-**data  **  
+**data**  
 full model example data:  https://fluidityproject.github.io/  
 github address: https://github.com/FluidityProject/fluidity  
 **import the environment in venv**  
@@ -11,3 +11,4 @@ github address: https://github.com/FluidityProject/fluidity
         workon venv_ROM            //enter this venv  
         pip install -r environment/requirements.txt  
   ```
+others
