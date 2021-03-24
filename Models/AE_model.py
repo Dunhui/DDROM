@@ -1,13 +1,15 @@
 import sys
+
+from Models.Load_Data import *
+from Models.Model_Processing import *
+
 import numpy as np
-# from keras import backend as K
 from keras.layers import Input, Dense
 from keras.models import Model, load_model
 from keras.callbacks import ModelCheckpoint
 from sklearn.preprocessing import MinMaxScaler
 import joblib
-from LoadVolData import *
-from modelProcessing import *
+
 
 
 class DeepAE(object):
@@ -76,9 +78,9 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 	print("Data loading...")
 	# load and pre-processing data
 	data = LoadmyData()
-	Velocity_scaler = data.get_data(ori_path, fileName, field_name, di, data_file_name, modelsFolder)
-	random_velocity = data.data_shuffle(Velocity_scaler)
-	train, test = data.train_and_test(random_velocity, test_rate = 0.2)
+	inputs_scaler = data.get_data(ori_path, fileName, field_name, di, data_file_name, modelsFolder)
+	random_inputs = data.data_shuffle(inputs_scaler)
+	train, test = data.train_and_test(random_inputs, test_rate = 0.2)
 
 	# train model
 	deepAE = DeepAE()
@@ -93,7 +95,7 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 
 	# test and restore
 	ae = load_model(modelsFolder + "/" + AEFileName, compile=False)
-	ae_outputs = ae.predict(Velocity_scaler)
+	ae_outputs = ae.predict(inputs_scaler)
 
 	if di == 2:
 		u ,v = np.hsplit(ae_outputs, 2)
@@ -101,20 +103,18 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 		scaler_v = joblib.load(modelsFolder + '/scaler_v.pkl')
 		outputs_u = scaler_u.inverse_transform(u)
 		outputs_v = scaler_v.inverse_transform(v)
-		Velocity_DIM = np.dstack((outputs_u, outputs_v))
+		outputs = np.dstack((outputs_u, outputs_v))
 	elif di == 1:
 		scaler = joblib.load(modelsFolder + '/scaler_1d.pkl')
-		outputs_u = scaler.inverse_transform(ae_outputs)
-	print('AE train successfully.\n The shape of \'DeepAE outputs\' is ',Velocity_DIM.shape)
-	transform_vector(Velocity_DIM, Velocity_DIM.shape[0], ori_path, destinationFolder, fileName, newFieldName)
-
-	# generate the code for forecasting training
-	AE_encoder = load_model(modelsFolder + "/" + encoderFileName, compile=False)
-	AEcode = AE_encoder.predict(Velocity_scaler)
-	np.save(path + Trans_code_name, AEcode)
-	print('The shape of \'AE_Code for Predict\' is ',AEcode.shape)
-
-
+		outputs = scaler.inverse_transform(ae_outputs)
+	print('AE train successfully.\n The shape of \'DeepAE outputs\' is ',outputs.shape)
+	transform_vector(outputs, outputs.shape[0], ori_path, destinationFolder, fileName, newFieldName)
+	# save the code for transformer	 
+	encoder = load_model(modelsFolder + "/" + encoderFileName, compile=False)
+	codes = encoder.predict(inputs_scaler)
+	print('AE train successfully.\n The shape of \'DeepAE outputs\' is ',codes.shape)
+	np.save(path + '/' + Trans_code_name,codes)
+	
 # if __name__=="__main__":  
 
 # 	# ROM train
