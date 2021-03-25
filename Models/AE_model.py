@@ -12,10 +12,39 @@ import joblib
 
 
 
-class DeepAE(object):
+class AE_model(object):
 	"""DeepAutoencoder Model"""
 	def __init__(self):
-		super(DeepAE, self).__init__()
+		super(AE_model, self).__init__()
+
+	def build_ShallowAE_model(self, input_dim, encoding_dim):
+
+		# encoder layers
+		input_img = Input(shape=(input_dim, ))
+		encoded = Dense(encoding_dim * 8, activation='relu')(input_img)
+		encoded = Dense(encoding_dim * 2, activation='relu')(encoded)
+		encoded = Dense(encoding_dim)(encoded)
+
+		# decoder layers
+		decoded = Dense(encoding_dim * 2, activation='relu')(encoded)
+		decoded = Dense(encoding_dim * 8, activation='relu')(decoded)
+		decoded = Dense(input_dim, activation='sigmoid')(decoded)
+
+		# this model maps an input to its reconstruction
+		self.autoencoder = Model(input_img, decoded)
+		self.encoder = Model(input_img, encoded)
+		encoded_input = Input(shape=(encoding_dim, ))
+
+		decoder_layer1 = self.autoencoder.layers[-1]
+		decoder_layer2 = self.autoencoder.layers[-2]
+		decoder_layer3 = self.autoencoder.layers[-3]		
+		self.decoder = Model(encoded_input, decoder_layer1(decoder_layer2(decoder_layer3(encoded_input))))
+
+		# configure model 
+		self.autoencoder.compile(optimizer='adam', loss = 'mse', metrics = ['accuracy'])
+
+		self.autoencoder.summary()
+
 
 	def build_DeepAE_model(self, input_dim, encoding_dim):
 
@@ -51,16 +80,16 @@ class DeepAE(object):
 		# # create the decoder model
 		self.decoder = Model(encoded_input, decoder_layer1(decoder_layer2(decoder_layer3(decoder_layer4(decoder_layer5(decoder_layer6(encoded_input)))))))
 
-		# configure model to use a per-pixel binary crossentropy loss, and the Adadelta optimizer
+		# configure model 
 		self.autoencoder.compile(optimizer='adam', loss = 'mse', metrics = ['accuracy'])
 
 		self.autoencoder.summary()
 
 		
-	def train_DeepAE_model(self, x_train, x_test, epochs, batch_size, modelsFolder, encoderFileName, decoderFileName, AEFileName):
+	def train_AE_model(self, x_train, x_test, epochs, batch_size, modelsFolder, encoderFileName, decoderFileName, AEFileName):
 		
 		self.history_record = self.autoencoder.fit(x_train, x_train, epochs = epochs, batch_size = batch_size, validation_split=0.2)
-		# draw_Acc_Loss(self.history_record)		
+		draw_Acc_Loss(self.history_record)		
 		save_model(self.encoder, encoderFileName, modelsFolder)
 		save_model(self.decoder, decoderFileName, modelsFolder)
 		save_model(self.autoencoder, AEFileName, modelsFolder)
@@ -74,7 +103,6 @@ class DeepAE(object):
 def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim, ae_epochs, ae_batch_size, modelsFolder,
 	encoderFileName, decoderFileName, AEFileName, destinationFolder, newFieldName, Trans_code_name):
 
-	# Load data for AE & DeepAE
 	print("Data loading...")
 	# load and pre-processing data
 	data = LoadmyData()
@@ -83,9 +111,9 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 	train, test = data.train_and_test(random_inputs, test_rate = 0.2)
 
 	# train model
-	deepAE = DeepAE()
+	deepAE = AE_model()
 	deepAE.build_DeepAE_model(input_dim = train.shape[1], encoding_dim = ae_encoding_dim)
-	deepAE.train_DeepAE_model(train, test,epochs = ae_epochs, 
+	deepAE.train_AE_model(train, test, epochs = ae_epochs, 
 										batch_size = ae_batch_size, 
 										modelsFolder = modelsFolder, 
 										encoderFileName = encoderFileName, 
@@ -93,10 +121,19 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 										AEFileName = AEFileName)
 	print('AE model is trained successfully.')
 
-	# test and restore
+	# test 
 	ae = load_model(modelsFolder + "/" + AEFileName, compile=False)
 	ae_outputs = ae.predict(inputs_scaler)
+	# for i in range(len(ae_outputs)):
+	# 	pccs = np.corrcoef(inputs_scaler[i], ae_outputs[i])
+	# 	print(pccs)
 
+	# for i in range(len(ae_outputs)):
+		
+
+
+	# restore data
+	
 	if di == 2:
 		u ,v = np.hsplit(ae_outputs, 2)
 		scaler_u = joblib.load(modelsFolder + '/scaler_u.pkl')
@@ -109,6 +146,7 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 		outputs = scaler.inverse_transform(ae_outputs)
 	print('AE train successfully.\n The shape of \'DeepAE outputs\' is ',outputs.shape)
 	transform_vector(outputs, outputs.shape[0], ori_path, destinationFolder, fileName, newFieldName)
+
 	# save the code for transformer	 
 	encoder = load_model(modelsFolder + "/" + encoderFileName, compile=False)
 	codes = encoder.predict(inputs_scaler)
