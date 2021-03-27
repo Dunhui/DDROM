@@ -2,7 +2,7 @@ import sys
 
 from Models.Load_Data import *
 from Models.Model_Processing import *
-
+import pandas as pd
 import numpy as np
 from keras.layers import Input, Dense
 from keras.models import Model, load_model
@@ -124,16 +124,9 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 	# test 
 	ae = load_model(modelsFolder + "/" + AEFileName, compile=False)
 	ae_outputs = ae.predict(inputs_scaler)
-	# for i in range(len(ae_outputs)):
-	# 	pccs = np.corrcoef(inputs_scaler[i], ae_outputs[i])
-	# 	print(pccs)
-
-	# for i in range(len(ae_outputs)):
-		
-
-
-	# restore data
+	# cc(inputs_scaler,ae_outputs)
 	
+	# inverse_transform
 	if di == 2:
 		u ,v = np.hsplit(ae_outputs, 2)
 		scaler_u = joblib.load(modelsFolder + '/scaler_u.pkl')
@@ -144,13 +137,18 @@ def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim
 	elif di == 1:
 		scaler = joblib.load(modelsFolder + '/scaler_1d.pkl')
 		outputs = scaler.inverse_transform(ae_outputs)
-	print('AE train successfully.\n The shape of \'DeepAE outputs\' is ',outputs.shape)
+
+	# correlation coefficient plot
+	ori_data = np.load(ori_path + '/' + data_file_name)
+	cc(ori_data,outputs)
+
+	# restore data
 	transform_vector(outputs, outputs.shape[0], ori_path, destinationFolder, fileName, newFieldName)
 
 	# save the code for transformer	 
 	encoder = load_model(modelsFolder + "/" + encoderFileName, compile=False)
 	codes = encoder.predict(inputs_scaler)
-	print('AE train successfully.\n The shape of \'DeepAE outputs\' is ',codes.shape)
+	print('Code for transformer',codes.shape)
 	np.save(path + '/' + Trans_code_name,codes)
 	
 # if __name__=="__main__":  
