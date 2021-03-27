@@ -34,16 +34,9 @@ def draw_Acc_Loss(history):
 	plt.show()
 
 
-def plot_cc(cc_data):
-    plt.figure(1)
-    x=np.arange(1,cc_data.shape[0]+1)
-    plt.plot(x, cc_data)
-    plt.title('Correlation Coefficient')
-    plt.ylabel('cc_value')
-    plt.xlabel('time')
-    plt.show()
 
 def cc(ori_data,rom_data):
+# draw the plot for correlation coefficient
     pearson_value = []
     if len(ori_data) != len(rom_data):
         print('the length of these two array do not match')
@@ -61,8 +54,22 @@ def cc(ori_data,rom_data):
             else:
                 pearson_value = np.hstack((pearson_value,value)) 
         pearson_value = np.reshape(pearson_value,(-1,1))
-        plot_cc(pearson_value)
-    
+       
+    plt.figure(1)
+    x=np.arange(1,pearson_value.shape[0]+1)
+    plt.plot(x, pearson_value)
+    plt.title('Correlation Coefficient')
+    plt.ylabel('cc_value')
+    plt.xlabel('time')
+    plt.show()
+
+# # draw the plot for point over time series
+# def point_over_time(path, data_npy_file, No):
+#     outputs = np.load(data_npy_file)   
+
+
+
+
 # copy original files
 def copyFiles(sourceDir,targetDir):
     if sourceDir.find("exceptionfolder")>0:
