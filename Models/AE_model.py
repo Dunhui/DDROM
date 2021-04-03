@@ -1,5 +1,4 @@
 import sys
-
 from Models.Load_Data import *
 from Models.Model_Processing import *
 import pandas as pd
@@ -86,90 +85,59 @@ class AE_model(object):
 		self.autoencoder.summary()
 
 		
-	def train_AE_model(self, x_train, x_test, epochs, batch_size, modelsFolder, encoderFileName, decoderFileName, AEFileName):
+	def train_AE_model(self, train, test, validation_set, epochs, batch_size, models_folder, encoder_file_name, decoder_file_name, AE_file_name):
 		
-		self.history_record = self.autoencoder.fit(x_train, x_train, epochs = epochs, batch_size = batch_size, validation_split=0.2)
+		self.history_record = self.autoencoder.fit(train, train, epochs = epochs, batch_size = batch_size, validation_data=(test, test))
 		draw_Acc_Loss(self.history_record)		
-		save_model(self.encoder, encoderFileName, modelsFolder)
-		save_model(self.decoder, decoderFileName, modelsFolder)
-		save_model(self.autoencoder, AEFileName, modelsFolder)
+		save_model(self.encoder, encoder_file_name, models_folder)
+		save_model(self.decoder, decoder_file_name, models_folder)
+		save_model(self.autoencoder, AE_file_name, models_folder)
 
 		print(" DeepAE model trained successfully")  
 
-		scores = self.autoencoder.evaluate(x_test, x_test, verbose=1)
+		scores = self.autoencoder.evaluate(validation_set, validation_set, verbose=1)
 		print('Test loss:', scores[0], '\nTest accuracy:', scores[1])
 	
 
-def AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim, ae_epochs, ae_batch_size, modelsFolder,
-	encoderFileName, decoderFileName, AEFileName, destinationFolder, newFieldName, Trans_code_name):
+def AE(ori_path, file_name, field_name, di, data_file_name, 
+	ae_validation_rate, ae_test_rate, ae_encoding_dim, ae_epochs, ae_batch_size, 
+	models_folder, encoder_file_name, decoder_file_name, AE_file_name,
+	destination_folder, new_field_name, Trans_code_name):
 
 	print("Data loading...")
 	# load and pre-processing data
-	data = LoadmyData()
-	inputs_scaler = data.get_data(ori_path, fileName, field_name, di, data_file_name, modelsFolder)
-	random_inputs = data.data_shuffle(inputs_scaler)
-	train, test = data.train_and_test(random_inputs, test_rate = 0.2)
+	data = Load_Data()
+	inputs_scalered = data.get_data(ori_path, file_name, field_name, di, data_file_name, models_folder)
+	train_set, validation_set = data.split_dataset(inputs_scalered, ae_validation_rate)
+
+	random_train_set = data.data_shuffle(train_set)
+	train, test = data.split_dataset(random_train_set, test_rate = ae_test_rate)
 
 	# train model
 	deepAE = AE_model()
 	deepAE.build_DeepAE_model(input_dim = train.shape[1], encoding_dim = ae_encoding_dim)
-	deepAE.train_AE_model(train, test, epochs = ae_epochs, 
+	deepAE.train_AE_model(train, test, validation_set, epochs = ae_epochs, 
 										batch_size = ae_batch_size, 
-										modelsFolder = modelsFolder, 
-										encoderFileName = encoderFileName, 
-										decoderFileName = decoderFileName, 
-										AEFileName = AEFileName)
+										models_folder = models_folder, 
+										encoder_file_name = encoder_file_name, 
+										decoder_file_name = decoder_file_name, 
+										AE_file_name = AE_file_name)
 	print('AE model is trained successfully.')
 
 	# test 
-	ae = load_model(modelsFolder + "/" + AEFileName, compile=False)
-	ae_outputs = ae.predict(inputs_scaler)
-	# cc(inputs_scaler,ae_outputs)
+	ae = load_model(models_folder + "/" + AE_file_name, compile=False)
+	ae_outputs = ae.predict(inputs_scalered)
+	cc(inputs_scalered,ae_outputs)
 	
-	# inverse_transform
-	if di == 2:
-		u ,v = np.hsplit(ae_outputs, 2)
-		scaler_u = joblib.load(modelsFolder + '/scaler_u.pkl')
-		scaler_v = joblib.load(modelsFolder + '/scaler_v.pkl')
-		outputs_u = scaler_u.inverse_transform(u)
-		outputs_v = scaler_v.inverse_transform(v)
-		outputs = np.dstack((outputs_u, outputs_v))
-	elif di == 1:
-		scaler = joblib.load(modelsFolder + '/scaler_1d.pkl')
-		outputs = scaler.inverse_transform(ae_outputs)
-
-	# correlation coefficient plot
-	ori_data = np.load(ori_path + '/' + data_file_name)
+	outputs = data.scaler_inverse(di, ae_outputs, models_folder)
+	ori_data = np.load(data_file_name)
+	# print(ori_data.shape, outputs.shape)
 	cc(ori_data,outputs)
 
 	# restore data
-	transform_vector(outputs, outputs.shape[0], ori_path, destinationFolder, fileName, newFieldName)
+	transform_vector(outputs, outputs.shape[0], ori_path, destination_folder, file_name, new_field_name)
 
 	# save the code for transformer	 
-	encoder = load_model(modelsFolder + "/" + encoderFileName, compile=False)
-	codes = encoder.predict(inputs_scaler)
-	print('Code for transformer',codes.shape)
-	np.save(path + '/' + Trans_code_name,codes)
-	
-# if __name__=="__main__":  
-
-# 	# ROM train
-# 	path = '../../datasets/flow_past_cylinder/'	
-# 	ori_path = path + 'Rui_2002'
-# 	fileName = '/circle-2d-drag_'
-# 	field_name = 'Velocity'
-# 	di = 2
-# 	data_file_name = '../Velocity_U_V.npy'
-# 	ae_encoding_dim = 8
-# 	ae_epochs = 300
-# 	ae_batch_size = 64
-# 	modelsFolder = './saved_models'
-# 	encoderFileName = 'AE_vel_encoder_8.h5'
-# 	decoderFileName = 'AE_vel_decoder_8.h5'
-# 	AEFileName = 'AE_vel_8.h5'
-# 	destinationFolder = path +'AE_outputs'
-# 	newFieldName = 'Velocity_dim_8'
-# 	Trans_code_name = 'Transformer_code_8.npy'
-
-# 	AE(path, ori_path, fileName, field_name, di, data_file_name, ae_encoding_dim, ae_epochs, ae_batch_size, modelsFolder,
-# 	encoderFileName, decoderFileName, AEFileName, destinationFolder, newFieldName, Trans_code_name)
+	encoder = load_model(models_folder + "/" + encoder_file_name, compile=False)
+	codes = encoder.predict(inputs_scalered)
+	np.save(models_folder + '/' + Trans_code_name, codes)

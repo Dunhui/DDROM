@@ -3,7 +3,10 @@ import vtktools
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
 
+start_time = 
+time_length = 
 
 def save_model(model, model_name, save_dir):
 # function for saving model
@@ -34,7 +37,6 @@ def draw_Acc_Loss(history):
 	plt.show()
 
 
-
 def cc(ori_data,rom_data):
 # draw the plot for correlation coefficient
     pearson_value = []
@@ -56,19 +58,100 @@ def cc(ori_data,rom_data):
         pearson_value = np.reshape(pearson_value,(-1,1))
        
     plt.figure(1)
-    x=np.arange(1,pearson_value.shape[0]+1)
-    plt.plot(x, pearson_value)
-    plt.title('Correlation Coefficient')
-    plt.ylabel('cc_value')
-    plt.xlabel('time')
+
+    x = np.linspace(0,200,2000)
+    y = pearson_value[0:2000,:]
+    # plt.title('Correlation Coefficient')
+    plt.plot(x, y)
+    plt.xlim((-0.1, 200.1))# range
+    plt.ylim((0.9, 1.01))
+    plt.xlabel('Time(s)',{'size' : 11})
+    plt.ylabel('Pearson Correlation Coefficient',{'size' : 11})
+    plt.xticks(np.arange(0,200.1,25))
+    plt.yticks(np.arange(0.9,1.01,0.01))
     plt.show()
 
-# # draw the plot for point over time series
-# def point_over_time(path, data_npy_file, No):
-#     outputs = np.load(data_npy_file)   
+# draw the plot for point over time series
+def point_over_time(data_1, data_2, pointNo, fieldName):# 1: full model; 2: ROM model
+    
+    if data_1.shape[0] != data_2.shape[0]:
+        print('the length of these two series do not match. Please check them.')
 
+    else:
+        if data_1.ndim == 3 and data_2.ndim == 3:
+            x = np.linspace(0,200,2000)
+            # x = np.arange(1,data_1.shape[0]+1)
+            y_1_u = data_1[0:2000,pointNo,0] # u
+            y_1_v = data_1[0:2000,pointNo,1] # v
+            y_2_u = data_2[0:2000,pointNo,0] # u
+            y_2_v = data_2[0:2000,pointNo,1] # v
+            
+            plt.figure(1)
+            plt.plot(x, y_1_u, x, y_2_u)
+            plt.xlim((-0.1, 200.1))# range
+            plt.ylim((0, 1))
+            plt.title('Magnitude of ' + fieldName + ' x axis, pointNo: '+ str(pointNo))
+            plt.xlabel('Time(s)')
+            plt.ylabel(fieldName)
+            plt.legend(['Full Model', 'ROM Model'], loc='lower right')
 
+            plt.figure(2)
+            plt.plot(x, y_1_v, x, y_2_v)
+            plt.title('Magnitude of ' + fieldName + ' y axis, pointNo: '+ str(pointNo))
+            plt.xlim((-0.1, 200.1))# range
+            plt.ylim((0, 1))
+            plt.xlabel('Time(s)')
+            plt.ylabel(fieldName)
+            plt.legend(['Full Model', 'ROM Model'], loc='lower right')
 
+            plt.show()
+
+        elif data_1.ndim == 2 and data_2.ndim == 2:
+            x = np.linspace(0,10,1000)
+            # x = np.arange(1,data_1.shape[0]+1)
+            y_1 = data_1[0:1000,pointNo] 
+            y_2 = data_2[0:1000,pointNo]
+            plt.figure()
+            plt.plot(x,y_1,x,y_2)
+            # plt.title('Magnitude of ' + fieldName + '    PointID: ' + str(pointNo))
+            # plt.title('PointID: ' + str(pointNo))
+            plt.xlabel('Time',{'size' : 11})
+            plt.ylabel(fieldName,{'size' : 11})
+            plt.xticks(np.arange(0,10.1,1))
+            plt.yticks(np.arange(0,1.1,0.2))
+            plt.legend(['Full Model', 'ROM'], loc='upper right')
+            plt.show()
+
+        else:
+            print('the dimension of these two series are not equal. Please check them.')
+
+def rmse_over_time(ori_data, rom_data):
+    rmse_value = []
+    if len(ori_data) != len(rom_data):
+        print('the length of these two array do not match')
+    else:
+        for i in range(len(rom_data)):
+            value = np.sqrt(mean_squared_error(ori_data[i], rom_data[i]))
+            # value = mean_squared_error(ori_data[i], rom_data[i])
+            if i == 0:
+                rmse_value = value
+            else:
+                rmse_value = np.hstack((rmse_value,value))
+        rmse_value = np.reshape(rmse_value,(-1,1))
+       
+    plt.figure(1)
+
+    x = np.linspace(0,200,2000)
+    y = rmse_value[0:2000,:]
+    # plt.title('Correlation Coefficient')
+    plt.plot(x, y)
+    plt.xlim((-0.1, 200.1))# range
+    plt.ylim((-0.005, 0.2005))
+    plt.xlabel('Time(s)',{'size' : 11})
+    plt.ylabel('RMSE',{'size' : 11})
+    plt.xticks(np.arange(0,200.1,25))
+    plt.yticks(np.arange(0,0.21,0.05))
+    plt.show()
 
 # copy original files
 def copyFiles(sourceDir,targetDir):
