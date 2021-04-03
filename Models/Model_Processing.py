@@ -5,9 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 
-start_time = 
-time_length = 
-
 def save_model(model, model_name, save_dir):
 # function for saving model
 	
