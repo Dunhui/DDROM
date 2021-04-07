@@ -53,7 +53,7 @@ class Load_Data(object):
 		print('Data normalized, the shape of dataset is :', outputs_scalered.shape)
 		return outputs_scalered
 
-	def scaler_data(self, di, outputs, models_folder='./DOCS'):
+	def scaler_data(self, di, outputs, models_folder, *ae_encoding_dim):
 
 		if di == 1:
 			scaler_1d = MinMaxScaler() # data normalization
@@ -86,14 +86,15 @@ class Load_Data(object):
 		elif di == 0:
 			scaler_code = MinMaxScaler() # data normalization
 			outputs = scaler_code.fit_transform(outputs)	
-			joblib.dump(scaler_code, models_folder + '/scaler_code.pkl')
+			joblib.dump(scaler_code, models_folder + '/scaler_code_' + str(ae_encoding_dim) + '.pkl')
 
 		else:
 			pass
 		return outputs
 
-	def scaler_inverse(self, di, outputs, models_folder):
+	def scaler_inverse(self, di, outputs, models_folder, *ae_encoding_dim):
 		# inverse_transform
+		# di =1,2,3 is for AE model, di=0 is for transformer
 		if di == 1:
 			scaler = joblib.load(models_folder + '/scaler_1d.pkl')
 			outputs = scaler.inverse_transform(outputs) 
@@ -114,7 +115,7 @@ class Load_Data(object):
 			outputs_w = scaler_w.inverse_transform(w)
 			outputs = np.dstack((outputs_u, outputs_v, outputs_w))
 		elif di == 0:
-			scaler = joblib.load(models_folder + '/scaler_code.pkl')
+			scaler = joblib.load(models_folder + '/scaler_code_' + str(ae_encoding_dim) + '.pkl')
 			outputs = scaler.inverse_transform(outputs) 
 		else:
 			pass
@@ -151,9 +152,7 @@ class Load_Data(object):
 
 	    data = []
 	    for i in range(len(dataset)-look_back-1):
-	        a = dataset[i:(i+look_back+1),...]
-	        data.append(a)
-
+	        data.append(dataset[i:(i+look_back+1),...])# data start from [0], [128]
 	    data_group = np.array(data)
 	    return data_group
 

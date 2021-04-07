@@ -88,7 +88,7 @@ class AE_model(object):
 	def train_AE_model(self, train, test, validation_set, epochs, batch_size, models_folder, encoder_file_name, decoder_file_name, AE_file_name):
 		
 		self.history_record = self.autoencoder.fit(train, train, epochs = epochs, batch_size = batch_size, validation_data=(test, test))
-		draw_Acc_Loss(self.history_record)		
+		# draw_Acc_Loss(self.history_record)		
 		save_model(self.encoder, encoder_file_name, models_folder)
 		save_model(self.decoder, decoder_file_name, models_folder)
 		save_model(self.autoencoder, AE_file_name, models_folder)
@@ -108,10 +108,9 @@ def AE(ori_path, file_name, field_name, di, data_file_name,
 	# load and pre-processing data
 	data = Load_Data()
 	inputs_scalered = data.get_data(ori_path, file_name, field_name, di, data_file_name, models_folder)
-	train_set, validation_set = data.split_dataset(inputs_scalered, ae_validation_rate)
-
-	random_train_set = data.data_shuffle(train_set)
-	train, test = data.split_dataset(random_train_set, test_rate = ae_test_rate)
+	random_inputs = data.data_shuffle(inputs_scalered)
+	train_set, validation_set = data.split_dataset(random_inputs, ae_validation_rate)
+	train, test = data.split_dataset(train_set, test_rate = ae_test_rate)
 
 	# train model
 	deepAE = AE_model()
@@ -127,17 +126,17 @@ def AE(ori_path, file_name, field_name, di, data_file_name,
 	# test 
 	ae = load_model(models_folder + "/" + AE_file_name, compile=False)
 	ae_outputs = ae.predict(inputs_scalered)
-	cc(inputs_scalered,ae_outputs)
+	# ae_cc(inputs_scalered, ae_outputs)
 	
 	outputs = data.scaler_inverse(di, ae_outputs, models_folder)
 	ori_data = np.load(data_file_name)
-	# print(ori_data.shape, outputs.shape)
-	cc(ori_data,outputs)
-
+	
+	ae_cc(ori_data,outputs)
+	ae_rmse(ori_data,outputs)
 	# restore data
 	transform_vector(outputs, outputs.shape[0], ori_path, destination_folder, file_name, new_field_name)
 
 	# save the code for transformer	 
 	encoder = load_model(models_folder + "/" + encoder_file_name, compile=False)
 	codes = encoder.predict(inputs_scalered)
-	np.save(models_folder + '/' + Trans_code_name, codes)
+	np.save(Trans_code_name, codes)
