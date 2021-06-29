@@ -1,12 +1,12 @@
 import sys
 from Models.Load_Data import *
 from Models.Model_Processing import *
-import pandas as pd
 import numpy as np
 from keras.layers import Input, Dense
 from keras.models import Model, load_model
-from keras.callbacks import ModelCheckpoint
-from sklearn.preprocessing import MinMaxScaler
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras import backend as K
+from sklearn.model_selection import train_test_split
 import joblib
 
 
@@ -53,6 +53,7 @@ class AE_model(object):
 		encoded = Dense(encoding_dim * 8, activation='relu')(encoded)
 		encoded = Dense(encoding_dim * 4, activation='relu')(encoded)
 		encoded = Dense(encoding_dim * 2, activation='relu')(encoded)
+
 		encoded = Dense(encoding_dim)(encoded)
 
 		# "decoded" is the lossy reconstruction of the input
@@ -78,44 +79,75 @@ class AE_model(object):
 
 		# # create the decoder model
 		self.decoder = Model(encoded_input, decoder_layer1(decoder_layer2(decoder_layer3(decoder_layer4(decoder_layer5(decoder_layer6(encoded_input)))))))
+		def root_mean_squared_error(true, pred):
+			return K.sqrt(K.mean(K.square(pred - true))) 
 
 		# configure model 
-		self.autoencoder.compile(optimizer='adam', loss = 'mse', metrics = ['accuracy'])
-
+		self.autoencoder.compile(optimizer='adam', loss = root_mean_squared_error, metrics = ['accuracy'])
 		self.autoencoder.summary()
 
 		
-	def train_AE_model(self, train, test, validation_set, epochs, batch_size, models_folder, encoder_file_name, decoder_file_name, AE_file_name):
-		
-		self.history_record = self.autoencoder.fit(train, train, epochs = epochs, batch_size = batch_size, validation_data=(test, test))
-		# draw_Acc_Loss(self.history_record)		
+
+	def train_AE_model(self, train, *validation, test, epochs, batch_size, models_folder, encoder_file_name, decoder_file_name, AE_file_name):
+		def generate_arrays(x,batch_size):
+			while 1:
+				for idx in range(int(np.ceil(len(x)/batch_size))):
+					x_excerpt = x[idx*batch_size:(idx+1)*batch_size,...]
+					yield x_excerpt, x_excerpt
+
+		check_model = ModelCheckpoint(models_folder + '/' + AE_file_name, 
+									monitor='val_loss', 
+									save_best_only=True, 
+									verbose=1)
+		reduce_LR = ReduceLROnPlateau(monitor='val_loss', 
+									factor=0.1, 
+									patience=5, 
+									verbose=0, 
+									mode='min', 
+									min_delta=0.000001, 
+									cooldown=0, 
+									min_lr=0)
+		# self.history_record = self.autoencoder.fit(train, train, 
+		# 										epochs = epochs, 
+		# 										batch_size = batch_size, 
+		# 										callbacks=[check_model, reduce_LR],
+		# 										validation_data=(test, test))
+		self.history_record = self.autoencoder.fit(generate_arrays(train, batch_size),
+															steps_per_epoch = np.ceil(len(train)/batch_size), 
+															epochs = epochs, 
+															callbacks=[check_model, reduce_LR],
+															# validation_split = 0.2)
+															validation_data=(validation, validation))	
+		draw_Acc_Loss(self.history_record)		
 		save_model(self.encoder, encoder_file_name, models_folder)
 		save_model(self.decoder, decoder_file_name, models_folder)
-		save_model(self.autoencoder, AE_file_name, models_folder)
+		# save_model(self.autoencoder, AE_file_name, models_folder)
 
 		print(" DeepAE model trained successfully")  
 
-		scores = self.autoencoder.evaluate(validation_set, validation_set, verbose=1)
+		scores = self.autoencoder.evaluate(generate_arrays(test, batch_size),steps = np.ceil(len(test)/batch_size), verbose=1)
 		print('Test loss:', scores[0], '\nTest accuracy:', scores[1])
+
+def generate_predict(x,batch_size):
+	while 1:
+		for idx in range(int(np.ceil(len(x)/batch_size))):
+			x_excerpt = x[idx*batch_size:(idx+1)*batch_size,...]
+			yield x_excerpt
+
+def AE(ori_data, ae_test_rate, ae_validation_rate, ae_encoding_dim, ae_epochs, ae_batch_size, 
+	models_folder, encoder_file_name, decoder_file_name, AE_file_name, 
+	AE_scalered_outputs_name, Trans_code_name):
+
+	# print("Data loading...")
 	
-
-def AE(ori_path, file_name, field_name, di, data_file_name, 
-	ae_validation_rate, ae_test_rate, ae_encoding_dim, ae_epochs, ae_batch_size, 
-	models_folder, encoder_file_name, decoder_file_name, AE_file_name,
-	destination_folder, new_field_name, Trans_code_name):
-
-	print("Data loading...")
-	# load and pre-processing data
-	data = Load_Data()
-	inputs_scalered = data.get_data(ori_path, file_name, field_name, di, data_file_name, models_folder)
-	random_inputs = data.data_shuffle(inputs_scalered)
-	train_set, validation_set = data.split_dataset(random_inputs, ae_validation_rate)
-	train, test = data.split_dataset(train_set, test_rate = ae_test_rate)
+	train_set, test = train_test_split(ori_data, test_size=ae_test_rate, random_state=1)
+	train, validation = train_test_split(train_set, test_size=ae_validation_rate, random_state=1)
 
 	# train model
 	deepAE = AE_model()
-	deepAE.build_DeepAE_model(input_dim = train.shape[1], encoding_dim = ae_encoding_dim)
-	deepAE.train_AE_model(train, test, validation_set, epochs = ae_epochs, 
+	deepAE.build_DeepAE_model(input_dim = train_set.shape[1], encoding_dim = ae_encoding_dim)
+	deepAE.train_AE_model(train, validation, test = test, 
+										epochs = ae_epochs, 
 										batch_size = ae_batch_size, 
 										models_folder = models_folder, 
 										encoder_file_name = encoder_file_name, 
@@ -125,18 +157,11 @@ def AE(ori_path, file_name, field_name, di, data_file_name,
 
 	# test 
 	ae = load_model(models_folder + "/" + AE_file_name, compile=False)
-	ae_outputs = ae.predict(inputs_scalered)
-	# ae_cc(inputs_scalered, ae_outputs)
-	
-	outputs = data.scaler_inverse(di, ae_outputs, models_folder)
-	ori_data = np.load(data_file_name)
-	
-	ae_cc(ori_data,outputs)
-	ae_rmse(ori_data,outputs)
-	# restore data
-	transform_vector(outputs, outputs.shape[0], ori_path, destination_folder, file_name, new_field_name)
+	ae_outputs = ae.predict(generate_predict(ori_data, ae_batch_size), steps = np.ceil(len(ori_data)/ae_batch_size))
+	np.save(AE_scalered_outputs_name, ae_outputs)
 
 	# save the code for transformer	 
 	encoder = load_model(models_folder + "/" + encoder_file_name, compile=False)
-	codes = encoder.predict(inputs_scalered)
+	codes = encoder.predict(ori_data)
 	np.save(Trans_code_name, codes)
+

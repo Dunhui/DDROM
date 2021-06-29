@@ -4,6 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
 
 		
 class Load_Data(object):
@@ -44,14 +45,14 @@ class Load_Data(object):
 					outputs = uvw if i==0 else np.vstack((outputs,uvw))# connect data 
 				else:
 					print('the dimen of data has not been submitted')
-			print('Data loaded from original vtu files.')
+			# print('Data loaded from original vtu files.')
 			np.save(data_file_name,outputs) # save data
 		
-		print('Data loaded. The shape of ', field_name, ' is ',outputs.shape)
-
-		outputs_scalered = self.scaler_data(di, outputs, models_folder)
-		print('Data normalized, the shape of dataset is :', outputs_scalered.shape)
-		return outputs_scalered
+		print('Data loaded. The shape of ', field_name, ' is ',outputs.shape)# , np.max(outputs), np.min(outputs))
+		if np.max(outputs)>1.1 or np.min(outputs)<-0.1:
+			outputs = self.scaler_data(di, outputs, models_folder)
+			print('Data normalized, the shape of dataset is :', outputs.shape)
+		return outputs
 
 	def scaler_data(self, di, outputs, models_folder, *ae_encoding_dim):
 
@@ -86,6 +87,7 @@ class Load_Data(object):
 		elif di == 0:
 			scaler_code = MinMaxScaler() # data normalization
 			outputs = scaler_code.fit_transform(outputs)	
+			ae_encoding_dim = ae_encoding_dim[0]
 			joblib.dump(scaler_code, models_folder + '/scaler_code_' + str(ae_encoding_dim) + '.pkl')
 
 		else:
@@ -100,6 +102,8 @@ class Load_Data(object):
 			outputs = scaler.inverse_transform(outputs) 
 		elif di == 2:
 			u ,v = np.hsplit(outputs, 2)
+			# u = outputs[:,:,0]
+			# v = outputs[:,:,1]
 			scaler_u = joblib.load(models_folder + '/scaler_u.pkl')
 			scaler_v = joblib.load(models_folder + '/scaler_v.pkl')
 			outputs_u = scaler_u.inverse_transform(u)
@@ -115,6 +119,7 @@ class Load_Data(object):
 			outputs_w = scaler_w.inverse_transform(w)
 			outputs = np.dstack((outputs_u, outputs_v, outputs_w))
 		elif di == 0:
+			ae_encoding_dim = ae_encoding_dim[0]
 			scaler = joblib.load(models_folder + '/scaler_code_' + str(ae_encoding_dim) + '.pkl')
 			outputs = scaler.inverse_transform(outputs) 
 		else:
@@ -122,55 +127,64 @@ class Load_Data(object):
 			
 		return outputs
 
-	def data_shuffle(self,data):
-
-		index = [i for i in range(len(data))]  
-		np.random.shuffle(index) 
-		data = data[index,:]
-
-		return data
-
-	def split_dataset(self,dataset,test_rate):
-	# divide dataset into train_dataset and test_dataset
-	
-		test_point = int(dataset.shape[0] * (1 - test_rate))
-		train = dataset[:test_point,...]
-		test = dataset[test_point:,...]
-
-		return np.array(train), np.array(test)
-
-	def dataset_with_seqlen(self,dataset, seq_len):
-		X, Y = [], []
-		for i in range(seq_len, len(dataset)):
-
-		  X.append(dataset[i-seq_len:i]) # Chunks of training data with a length of 128 df-rows
-		  Y.append(dataset[i]) #Value of 4th column (Close Price) of df-row 128+1
-	
-		return np.array(X), np.array(Y)
-
 	def create_dataset(self, dataset, look_back):
 
 	    data = []
 	    for i in range(len(dataset)-look_back-1):
 	        data.append(dataset[i:(i+look_back+1),...])# data start from [0], [128]
-	    data_group = np.array(data)
-	    return data_group
+	    # data_group = np.array(data)
+	    return np.array(data)
 
+	# def data_shuffle(self, data, rate):
+	# 	# X_train, X_test, y_train, y_test = train_test_split(data, test_size=rate, random_state=0)
 
-	def divide_x_y(self, dataset):
+	# 	index = [i for i in range(len(data))]  
+	# 	np.random.shuffle(index) 
+	# 	data = data[index,...]
 
-		data_x = dataset[:,:-1,:]
-		data_y = dataset[:,-1,:]
-		return data_x, data_y
+	# 	return data
 
+	# def split_dataset(self,dataset,test_rate):
+	# # divide dataset into train_dataset and test_dataset
 	
-  #   def 2d_to_3d(self, 2d_data):
-  #   	# add another zero dimensionality
+	# 	test_point = int(dataset.shape[0] * (1 - test_rate))
+	# 	train = dataset[:test_point,...]
+	# 	test = dataset[test_point:,...]
 
-		# x,y = 2d_data.shape[0], 2d_data.shape[1]
-		# 3d_data = np.reshape(2d_data, (x, y, 1))
-		# w_zero = np.zeros((x, y, 1))
-		# 3d_data=np.concatenate((3d_data,w_zero), axis = 2)
-		# print(3d_data.shape)
+	# 	return np.array(train), np.array(test)
 
-		# return 3d_data
+	# def dataset_with_seqlen(self,dataset, seq_len):
+	# 	X, Y = [], []
+	# 	for i in range(seq_len, len(dataset)):
+
+	# 	  X.append(dataset[i-seq_len:i]) # Chunks of training data with a length of 128 df-rows
+	# 	  Y.append(dataset[i]) #Value of 4th column (Close Price) of df-row 128+1
+	
+	# 	return np.array(X), np.array(Y)
+
+
+	# def divide_x_y(self, dataset):
+
+	# 	data_x = dataset[:,:-1,:]
+	# 	data_y = dataset[:,-1,:]
+	# 	return data_x, data_y
+
+
+	# def 2d_to_3d(self, 2d_data):
+	# # add another zero dimensionality
+
+	# 	x,y = 2d_data.shape[0], 2d_data.shape[1]
+	# 	3d_data = np.reshape(2d_data, (x, y, 1))
+	# 	w_zero = np.zeros((x, y, 1))
+	# 	3d_data=np.concatenate((3d_data,w_zero), axis = 2)
+	# 	print(3d_data.shape)
+
+	# 	return 3d_data
+
+def magnitude(data):
+# return value of (x^2+y^2+z^0)^0.5
+	output = []
+	for i in range(data.shape[0]):
+		output.append(np.sqrt(np.sum(np.square(data[i]), axis = 1)))
+	return np.array(output)
+	
