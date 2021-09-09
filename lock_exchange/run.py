@@ -8,8 +8,8 @@ from Models.Model_Processing import *
 
 if __name__=="__main__":  
 	# data
-	ori_path = './Full_Model_100s_10000'# path of full model vtu files
-	models_folder = './DOCS_100_10000' # path of stored models, npys and pkls.
+	ori_path = './Full_Model'# path of full model vtu files
+	models_folder = './DOCS' # path of stored models, npys and pkls.
 	file_name = '/lock_exchange_'# name for each vtu file
 	field_name = 'Temperature'# name of selected field
 	di = 1 # u,v,w for x,y,z, should be 3, but w = 0 in this example
@@ -30,7 +30,7 @@ if __name__=="__main__":
 	AE_scalered_outputs_name = models_folder + '/' + 'AE_' + field_name + '_scalered_dim' + str(ae_encoding_dim) + '.npy'
 	AE_outputs_name = models_folder + '/' + 'AE_' + field_name + '_dim' + str(ae_encoding_dim) + '.npy'
 
-	destination_folder = './DDROM_100s_10000' # path of ROM model vtu files
+	destination_folder = './DDROM' # path of ROM model vtu files
 	AE_new_field_name = field_name + '_AE_dim' + str(ae_encoding_dim) # name of new field restored by AE model
 	Trans_code_name = models_folder + '/' + 'code_dim' + str(ae_encoding_dim) + '.npy' # code compressed by AE
 	pointNo = 1413
@@ -77,98 +77,50 @@ if __name__=="__main__":
 
 	if sys.argv[1] == 'AE':
 	
-		# # AE training 
-		# AE(ori_data, ae_test_rate, ae_validation_rate, ae_encoding_dim, ae_epochs, ae_batch_size, 
-		# models_folder, encoder_file_name, decoder_file_name, AE_file_name, 
-		# Trans_code_name, AE_scalered_outputs_name)# restore data and print codes with definte dimensions.
+		# AE training 
+		AE(ori_data, ae_test_rate, ae_validation_rate, ae_encoding_dim, ae_epochs, ae_batch_size, 
+		models_folder, encoder_file_name, decoder_file_name, AE_file_name, 
+		Trans_code_name, AE_scalered_outputs_name)# restore data and print codes with definte dimensions.
 
-		# scl_inv(data_file_name, ae_tr_outputs, AE_outputs_name, di, models_folder, 
-		# ori_path, destination_folder, file_name, field_name, AE_new_field_name, pointNo)
+		scl_inv(data_file_name, ae_tr_outputs, AE_outputs_name, di, models_folder, 
+		ori_path, destination_folder, file_name, field_name, AE_new_field_name, pointNo)
 		
 		# Transformer training
 		Transformer(tr_validation_rate, tr_test_rate, tr_batch_size, seq_len, tr_epochs, # Transformer training
 			d_k, d_v, n_heads, ff_dim, ae_encoding_dim, # Attention
 			models_folder, Trans_code_name, ae_tr_model_name, start_point, ae_tr_outputs) # Forecasting
 
-		# AE_trans_decoder(data_file_name, ae_tr_outputs, decoder_file_name, di, models_folder, ae_decoder_outputs_name, # decoder
-		# 	ori_path, destination_folder, file_name, field_name, ae_trans_field_name, pointNo)
+		AE_trans_decoder(data_file_name, ae_tr_outputs, decoder_file_name, di, models_folder, ae_decoder_outputs_name, # decoder
+			ori_path, destination_folder, file_name, field_name, ae_trans_field_name, pointNo)
 		
-		# # Error
-		# error = calculate_error(data_file_name, ae_decoder_outputs_name)
-		# transform_vector(error, error.shape[0], ori_path, destination_folder, file_name, ae_error_trans_field_name)
+		# Error
+		error = calculate_error(data_file_name, ae_decoder_outputs_name)
+		transform_vector(error, error.shape[0], ori_path, destination_folder, file_name, ae_error_trans_field_name)
 
 	elif sys.argv[1] == 'POD':	
 
 
 		# POD
-		# POD_encoder(ori_data, ae_encoding_dim, POD_name, POD_code_name) 
-		# POD_decoder(POD_code_name, POD_name, POD_scalered_decoder_name)
-		# scl_inv(data_file_name, POD_scalered_decoder_name, POD_decoder_name, di, models_folder, 
-		# 	ori_path, destination_folder, file_name, field_name, POD_new_field_name, pointNo)
+		POD_encoder(ori_data, ae_encoding_dim, POD_name, POD_code_name) 
+		POD_decoder(POD_code_name, POD_name, POD_scalered_decoder_name)
+		scl_inv(data_file_name, POD_scalered_decoder_name, POD_decoder_name, di, models_folder, 
+			ori_path, destination_folder, file_name, field_name, POD_new_field_name, pointNo)
 
-		# # Transformer training
-		# Transformer(tr_validation_rate, tr_test_rate, tr_batch_size, seq_len, tr_epochs, # Transformer training
-		# 	d_k, d_v, n_heads, ff_dim, ae_encoding_dim, # Attention
-		# 	models_folder, POD_code_name, POD_tr_model_name, start_point, POD_tr_outputs) # Forecasting
+		# Transformer training
+		Transformer(tr_validation_rate, tr_test_rate, tr_batch_size, seq_len, tr_epochs, # Transformer training
+			d_k, d_v, n_heads, ff_dim, ae_encoding_dim, # Attention
+			models_folder, POD_code_name, POD_tr_model_name, start_point, POD_tr_outputs) # Forecasting
 
-		# # POD Decoder
-		# POD_trans_decoder(data_file_name, POD_tr_outputs, POD_name, di, models_folder, POD_decoder_outputs_name, # decoder
-		# ori_path, destination_folder, file_name, field_name, POD_trans_field_name, pointNo)
+		# POD Decoder
+		POD_trans_decoder(data_file_name, POD_tr_outputs, POD_name, di, models_folder, POD_decoder_outputs_name, # decoder
+		ori_path, destination_folder, file_name, field_name, POD_trans_field_name, pointNo)
 
 		# Error
 		error = calculate_error(data_file_name, POD_decoder_outputs_name)
 		transform_vector(error, error.shape[0], ori_path, destination_folder, file_name, POD_error_trans_field_name)
 
 
-	# # AE training 
-	# AE(ori_path, file_name, field_name, di, data_file_name, # full model data
-	# 	ae_validation_rate, ae_test_rate, ae_encoding_dim,ae_epochs, ae_batch_size, # AE training
-	# 	models_folder, encoder_file_name, decoder_file_name, AE_file_name, # store models
-	# 	destination_folder, new_field_name, Trans_code_name)# restore data and print codes with definte dimensions.
 	
-	# tr_validation_rate = 0.1 # validation rate outside the training
-	# tr_test_rate = 0.1 # test set
-
-	# tr_batch_size = 2 # Batch size of transformer training
-	# tr_epochs = 100 # epoch number of transformer training
-	# seq_len = 256 # sequence length of transformer training
-
-	# d_k = 256 # output number of D_k for query and key
-	# d_v = 256 # output number of D_v for value
-	# n_heads = 6 # number of heads
-	# ff_dim = 256 # dimension of outputs
-	# start_point = 0 # start time
-
-	# tr_model_name = models_folder + '/Transformer_dim'+ str(ae_encoding_dim) +'_seq'+ str(seq_len) + str(tr_batch_size) + '.hdf5' # transformer model name
-	# tr_outputs = models_folder + '/Transformer_dim'+ str(ae_encoding_dim) +'_seq'+ str(seq_len)+ str(tr_batch_size)  +'_outputs.npy'# transformer outputs
-
-	# # # Transformer training
-	# # train_transformer(tr_validation_rate, tr_test_rate, tr_batch_size, seq_len, tr_epochs, # Transformer training
-	# # 	d_k, d_v, n_heads, ff_dim, ae_encoding_dim, # Attention
-	# # 	models_folder, Trans_code_name, tr_model_name, start_point, tr_outputs) # Forecasting
-
-	# # outputs = np.load(Trans_code_name)
-	# # trans_outputs = np.load(tr_outputs)
-	# # print(outputs.shape, trans_outputs.shape)
-	# # ae_cc(outputs, trans_outputs)
-	# # ae_rmse(outputs, trans_outputs)
-
-
-	# trans_field_name = field_name + '_predicted_dim' + str(ae_encoding_dim) +'_seq'+ str(seq_len)+ str(tr_batch_size) # name of predicted field 
-	# decoder_outputs_name = models_folder + '/' + 'decoder_outputs_dim' + str(ae_encoding_dim) +'_seq'+ str(seq_len)+ str(tr_batch_size)+ '.npy' # predicted outputs
-	# # # # # pointNo = 303 # point of plot figures
-
-	# # Decoder
-	# trans_decoder(tr_outputs, decoder_file_name, di, models_folder, decoder_outputs_name, # decoder
-	# 	ori_path, destination_folder, trans_field_name, file_name) # transform vector
-
-	# outputs = np.load(data_file_name)
-	# trans_outputs = np.load(decoder_outputs_name)
-	# print(outputs.shape, trans_outputs.shape)
-	# ae_cc(outputs, trans_outputs)
-	# ae_rmse(outputs, trans_outputs)
-
-	# ori_data = np.load(data_file_name) # load original data
 	elif sys.argv[1] == 'evaluate':	
 		ori_data = np.load(data_file_name) # load original data
 		outputs_4 = np.load(models_folder + '/' + 'AE_TF_outputs_5_a.npy' ) # load decoder outputs		
@@ -179,14 +131,6 @@ if __name__=="__main__":
 		# outputs_8 = np.load(models_folder + '/' + 'POD_decoder_outputs_dim' + str(12) + '.npy' ) # load decoder outputs
 		# outputs_12 = np.load(models_folder + '/' + 'POD_decoder_outputs_dim' + str(12) + '.npy') # load decoder outputs
 
-
-
-
-		# outputs_8 = np.load(models_folder + '/' + 'decoder_outputs_dim' + str(8) + '.npy' ) # load decoder outputs
-		# outputs_12 = np.load(models_folder + '/' + 'decoder_outputs_dim' + str(12) + '.npy' ) # load decoder outputs
-		# outputs_16 = np.load(models_folder + '/' + 'decoder_outputs_dim' + str(16) + '.npy' ) # load decoder outputs
-
-		# cc(ori_data, outputs_4, outputs_8,outputs_12) # plot CC
+		cc(ori_data, outputs_4, outputs_8,outputs_12) # plot CC
 		rmse_over_time(ori_data, outputs_4, outputs_8,outputs_12) # plot RMSE
-		# point_over_time(ori_data, outputs_4, outputs_8, outputs_12, pointNo, field_name) # plot magnitude of particular point
-	# 
+		point_over_time(ori_data, outputs_4, outputs_8, outputs_12, pointNo, field_name) # plot magnitude of particular point
