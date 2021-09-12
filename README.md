@@ -4,7 +4,7 @@
 full model example data:  https://fluidityproject.github.io/  
 github address: https://github.com/FluidityProject/fluidity  
 ## Environment in venv
-**create a new virtualenv called venv_ROM with python3 for this project **
+**create a new virtualenv called venv_ROM with python3 for this project**
 
 ```
         cd .virtualenvs/      //enter the virtualenv folder  from home
