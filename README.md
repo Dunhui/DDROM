@@ -23,4 +23,4 @@ cd DDROM-main/     //enter this downloaded module folder
 mv environment/vtktools.py ***/.virtualenvs/venv_ROM/lib/python3.6/site-packages/   // ***the destination address is the venv just created
 pip install -r environment/requirements.txt  //install the requirement file into this venv
   ```
-others
+
