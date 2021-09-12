@@ -29,6 +29,8 @@ unzip DDROM-main.zip
 cd DDROM-main/     
 # remove the vtktools.py file into the lib in venv, ***the destination address is the venv just created
 mv environment/vtktools.py ***/.virtualenvs/venv_ROM/lib/python3.6/site-packages/  
+# remove the vtk.py file into the lib in venv, ***the destination address is the venv just created
+mv environment/vtk.py ***/.virtualenvs/venv_ROM/lib/python3.6/site-packages/ 
 # install the requirement file into this venv
 pip install -r environment/requirements.txt  
   ```
