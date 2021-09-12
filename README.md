@@ -6,8 +6,10 @@ github address: https://github.com/FluidityProject/fluidity
 ## Environment in venv
 **install virtualenv**(ignore this if you have already install virtualenv)
 ```
-sudo apt-get install python3-pip //install pip first
-sudo pip3 install virtualenv //install virtualenv
+# install pip first
+sudo apt-get install python3-pip 
+# install virtualenv
+sudo pip3 install virtualenv
 ```
 **create a new virtualenv called 'venv_ROM' with python3 for this project**
 ```
