@@ -39,19 +39,31 @@ fluidity example.flml
 *Install pip and virtualenv*(ignore this if you have already install virtualenv)
 ```
 sudo apt-get install python3-pip 
+```
+```
 sudo pip3 install virtualenv
 ```
 *Create a new virtualenv called 'venv_ROM' with python3 for this project. Enter the virtualenv folder from home and create a new virtualenv*
 ```
 cd .virtualenvs/      
+```
+```
 virtualenv -p python3 venv_ROM         
 ```
 *Enter the downloaded module folder and install the requirement file into the new virtualenv environment. Open a new commend in the downloaded module zip folder path, enter this venv and  install the requirement file into this venv.*
 ```
-workon venv_ROM        
+workon venv_ROM       
+```
+```
 unzip DDROM-main.zip    
-cd DDROM-main/     
+```
+```
+cd DDROM-main/
+```
+```
 mv environment/vtktools.py ***/.virtualenvs/venv_ROM/lib/python3.6/site-packages/   
+```
+```
 pip install -r environment/requirements.txt  
 ```
 
