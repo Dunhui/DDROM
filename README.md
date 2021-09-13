@@ -11,7 +11,7 @@ This is the code base for DDROM. [2109.02126.pdf](https://arxiv.org/pdf/2109.021
 - [Background](#background)
 - [Data](#data)
 - [Install](#install)
-- [Train models](#train models)
+- [Train_models](#train models)
 - [Outputs](#outputs)
 - [License](#license)
 
