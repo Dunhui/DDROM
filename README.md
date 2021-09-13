@@ -70,19 +70,27 @@ pip install -r environment/requirements.txt
 
 
 ## Usage
-
+**Example 1 : Lock exchange**
+```
+cd lock_exchange
 ```
 ```
-
-Note: The `license` badge image link at the top of this file should be updated with the correct `:user` and `:repo`.
-
-### Any optional sections
-
-
-
+python run.py AE
+python run.py POD
+python run.py evaluate
+```
+**Example 2 : Flow past a cylinder**
+```
+cd flow_past_cylinder
+```
+```
+python run.py AE
+python run.py POD
+python run.py evaluate
+```
 ## Contributing
 
 
 ## License
-
+GNU General Public License v3.0
 
