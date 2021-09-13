@@ -11,7 +11,7 @@ This is the code base for DDROM. [2109.02126.pdf](https://arxiv.org/pdf/2109.021
 - [Background](#background)
 - [Data](#data)
 - [Install](#install)
-- [Train_models](#train models)
+- [Train-models](#train-models)
 - [Outputs](#outputs)
 - [License](#license)
 
@@ -67,7 +67,7 @@ mv environment/vtktools.py ***/.virtualenvs/venv_ROM/lib/python3.6/site-packages
 pip install -r environment/requirements.txt  
 ```
 
-## Train models
+## Train-models
 **Example 1 : Lock exchange**  
 Enter the example folder 
 ```
