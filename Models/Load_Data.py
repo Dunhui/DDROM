@@ -2,7 +2,7 @@ import os
 import vtktools
 import joblib
 import numpy as np
-import pandas as pd
+
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
@@ -49,9 +49,8 @@ class Load_Data(object):
 			np.save(data_file_name,outputs) # save data
 		
 		print('Data loaded. The shape of ', field_name, ' is ',outputs.shape)# , np.max(outputs), np.min(outputs))
-		if np.max(outputs)>1.1 or np.min(outputs)<-0.1:
-			outputs = self.scaler_data(di, outputs, models_folder)
-			print('Data normalized, the shape of dataset is :', outputs.shape)
+		outputs = self.scaler_data(di, outputs, models_folder)
+		print('Data normalized, the shape of dataset is :', outputs.shape)
 		return outputs
 
 	def scaler_data(self, di, outputs, models_folder, *ae_encoding_dim):
@@ -96,7 +95,7 @@ class Load_Data(object):
 
 	def scaler_inverse(self, di, outputs, models_folder, *ae_encoding_dim):
 		# inverse_transform
-		# di =1,2,3 is for AE model, di=0 is for transformer
+		# di =1,2,3 is for AE model, di=0 is for attention codes or POD codes
 		if di == 1:
 			scaler = joblib.load(models_folder + '/scaler_1d.pkl')
 			outputs = scaler.inverse_transform(outputs) 
@@ -134,52 +133,6 @@ class Load_Data(object):
 	        data.append(dataset[i:(i+look_back+1),...])# data start from [0], [128]
 	    # data_group = np.array(data)
 	    return np.array(data)
-
-	# def data_shuffle(self, data, rate):
-	# 	# X_train, X_test, y_train, y_test = train_test_split(data, test_size=rate, random_state=0)
-
-	# 	index = [i for i in range(len(data))]  
-	# 	np.random.shuffle(index) 
-	# 	data = data[index,...]
-
-	# 	return data
-
-	# def split_dataset(self,dataset,test_rate):
-	# # divide dataset into train_dataset and test_dataset
-	
-	# 	test_point = int(dataset.shape[0] * (1 - test_rate))
-	# 	train = dataset[:test_point,...]
-	# 	test = dataset[test_point:,...]
-
-	# 	return np.array(train), np.array(test)
-
-	# def dataset_with_seqlen(self,dataset, seq_len):
-	# 	X, Y = [], []
-	# 	for i in range(seq_len, len(dataset)):
-
-	# 	  X.append(dataset[i-seq_len:i]) # Chunks of training data with a length of 128 df-rows
-	# 	  Y.append(dataset[i]) #Value of 4th column (Close Price) of df-row 128+1
-	
-	# 	return np.array(X), np.array(Y)
-
-
-	# def divide_x_y(self, dataset):
-
-	# 	data_x = dataset[:,:-1,:]
-	# 	data_y = dataset[:,-1,:]
-	# 	return data_x, data_y
-
-
-	# def 2d_to_3d(self, 2d_data):
-	# # add another zero dimensionality
-
-	# 	x,y = 2d_data.shape[0], 2d_data.shape[1]
-	# 	3d_data = np.reshape(2d_data, (x, y, 1))
-	# 	w_zero = np.zeros((x, y, 1))
-	# 	3d_data=np.concatenate((3d_data,w_zero), axis = 2)
-	# 	print(3d_data.shape)
-
-	# 	return 3d_data
 
 def magnitude(data):
 # return value of (x^2+y^2+z^0)^0.5
