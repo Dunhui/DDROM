@@ -12,7 +12,7 @@ This is the code base for DDROM. [2109.02126.pdf](https://arxiv.org/pdf/2109.021
 - [Data](#data)
 - [Install](#install)
 - [Usage](#usage)
-- [Contributing](#contributing)
+- [Outputs](#outputs)
 - [License](#license)
 
 
@@ -67,8 +67,6 @@ mv environment/vtktools.py ***/.virtualenvs/venv_ROM/lib/python3.6/site-packages
 pip install -r environment/requirements.txt  
 ```
 
-
-
 ## Usage
 **Example 1 : Lock exchange**
 ```
@@ -76,7 +74,11 @@ cd lock_exchange
 ```
 ```
 python run.py AE
+```
+```
 python run.py POD
+```
+```
 python run.py evaluate
 ```
 **Example 2 : Flow past a cylinder**
@@ -85,12 +87,16 @@ cd flow_past_cylinder
 ```
 ```
 python run.py AE
+```
+```
 python run.py POD
+```
+```
 python run.py evaluate
 ```
-## Contributing
-
-
+## Outputs
+![image](https://github.com/lexsaints/powershell/blob/master/IMG/ps2.png)
+![image](https://github.com/lexsaints/powershell/blob/master/IMG/ps2.png)
 ## License
 GNU General Public License v3.0
 
