@@ -68,29 +68,37 @@ pip install -r environment/requirements.txt
 ```
 
 ## Usage
-**Example 1 : Lock exchange**
+**Example 1 : Lock exchange**  
+Enter the example folder 
 ```
 cd lock_exchange
 ```
+Train DDROM with AE and attention blocks
 ```
 python run.py AE
 ```
+Train ROM with POD and attention blocks
 ```
 python run.py POD
 ```
+Evaluate the outputs of both models
 ```
 python run.py evaluate
 ```
-**Example 2 : Flow past a cylinder**
+**Example 2 : Flow past a cylinder**  
+Enter the example folder 
 ```
 cd flow_past_cylinder
 ```
+Train DDROM with AE and attention blocks
 ```
 python run.py AE
 ```
+Train ROM with POD and attention blocks
 ```
 python run.py POD
 ```
+Evaluate the outputs of both models
 ```
 python run.py evaluate
 ```
