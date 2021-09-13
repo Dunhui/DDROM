@@ -1,7 +1,8 @@
 # DDROM
 
-[![license](https://img.shields.io/github/license/:user/:repo.svg)](LICENSE)
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+
 
 This is the code base for DDROM. [2109.02126.pdf](https://arxiv.org/pdf/2109.02126.pdf)
 
