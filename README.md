@@ -31,6 +31,9 @@ sudo apt-get -y install fluidity
 ```
 **Generate data**
 ```
+cd example folder/Full\ Model
+```
+```
 fluidity example.flml
 ```
 ## Install
